@@ -168,8 +168,27 @@ Só na versão em `PREPARE_FOR_SUBMISSION`. Nunca envie para revisão sem o ok e
 **Screenshots.** Rode o dry-run, leia o que vai ser apagado, depois rode de verdade. A ordem na loja é a ordem dos nomes de arquivo. Use o `--device-type` do conjunto que já existe na versão (`asc screenshots list` mostra `APP_IPHONE_67` ou `APP_IPHONE_69`): o `--replace` só mexe nesse conjunto.
 ```bash
 asc screenshots upload --version-localization LOC_ID --path 1320x2868 --device-type IPHONE_67 --replace --dry-run
-asc screenshots upload --version-localization LOC_ID --path 1320x2868 --device-type IPHONE_67 --replace --confirm
+asc screenshots upload --version-localization LOC_ID --path 1320x2868 --device-type IPHONE_67 --replace --confirm --concurrency 1
 ```
+`--concurrency 1` sobe um arquivo por vez. Com o padrão (4 em paralelo) os uploads terminam fora de ordem.
+
+**Confira o que a Apple serve**, não só o retorno do upload. Na ASC de hoje cada screenshot é também um placement da Asset Library; liste em ordem de exibição, baixe as miniaturas e olhe:
+```bash
+asc localizations placements list --localization-id LOC_ID --include image --placement-type APP_SCREENSHOT \
+  --sort placementGroupPosition --output json > /tmp/placements.json
+python3 - <<'EOF'
+import json, urllib.request
+raw = open('/tmp/placements.json').read(); d = json.loads(raw[raw.index('{'):])
+inc = {i['id']: i for i in d.get('included', [])}
+for n, p in enumerate(d['data']):
+    img = inc[p['relationships']['image']['data']['id']]['attributes']
+    print(n + 1, img['fileName'], img['createdDate'])
+    urllib.request.urlretrieve(img['imageAsset']['templateUrl'].replace('{w}x{h}bb.{f}', '300x652bb.png'), f'/tmp/served-{n + 1}.png')
+EOF
+```
+Sem `--sort placementGroupPosition` a lista vem fora da ordem de exibição; não conclua nada sobre ordem sem ele.
+
+Se o usuário disser que "não mudou", confira primeiro qual versão ele está olhando. A versão à venda (`READY_FOR_SALE`) não aceita troca de imagem, e é ela que a loja mostra até a nova ser aprovada. A tela da versão nova na ASC às vezes só atualiza depois de recarregar a página.
 
 **Header e Search Results.** O id da Asset Library é o app id.
 ```bash
