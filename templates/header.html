@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  App Store product page header, still image: 3840 x 1646 PNG, no alpha.
+  iPhone shows only x 618-3222 (0.161-0.839). Apple's safe area: x 1098-2742, y 494-1154.
+  Status bar, back and share buttons sit over the top 38% (y < 625) beside the safe area: no text or small detail there.
+  The App Store shows the app name and icon under the header, so the art does not repeat them.
+  Replace the .focal content with the app's own art (its icon motif, its key object). Big faint shapes outside
+  the safe area are fine; anything small or any text goes inside it. Check with: render.mjs ... --guides header
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<!-- Swap the font for the app's brand font, or remove if the art has no letters. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&display=block">
+<style>
+  :root {
+    --bg: #F2542D;            /* app brand color */
+    --ink: #101217;           /* contrast color for art and text */
+    --soft: rgba(255,255,255,.17);
+    --ghost: rgba(255,255,255,.10);
+  }
+  html, body { margin: 0; }
+  .canvas {
+    position: relative; width: 3840px; height: 1646px; overflow: hidden;
+    background: radial-gradient(ellipse 70% 90% at 50% 0%, rgba(255,255,255,.16), rgba(255,255,255,0) 70%), var(--bg);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  .ghost { position: absolute; border-radius: 26%; background: var(--ghost); }
+  /* Centre of the safe area. Keep the focal art inside 1644 x 660. */
+  .focal { position: absolute; left: 50%; top: 824px; transform: translate(-50%, -50%); display: flex; gap: 96px; align-items: center; }
+  .tile { width: 300px; height: 300px; border-radius: 79px; display: grid; place-items: center; background: var(--soft); color: rgba(255,255,255,.78); font-weight: 800; font-size: 160px; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <!-- Background shapes, outside the safe area. -->
+  <div class="ghost" style="width:560px;height:560px;left:240px;top:-20px;transform:rotate(-14deg)"></div>
+  <div class="ghost" style="width:300px;height:300px;left:700px;top:1270px;transform:rotate(9deg)"></div>
+  <div class="ghost" style="width:340px;height:340px;left:2860px;top:60px;transform:rotate(-10deg)"></div>
+  <div class="ghost" style="width:620px;height:620px;left:3120px;top:1080px;transform:rotate(11deg)"></div>
+
+  <div class="focal">
+    <!-- ART: replace with the app's motif. Example: answer tiles with the chosen one drawn like the icon. -->
+    <div class="tile">A</div>
+    <div class="tile">B</div>
+    <div class="tile" style="background:#fff;color:var(--ink)">C</div>
+    <div class="tile">D</div>
+  </div>
+</div>
+</body>
+</html>

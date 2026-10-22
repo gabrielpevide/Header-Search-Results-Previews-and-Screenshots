@@ -1,0 +1,50 @@
+{
+  "canvas": { "width": 1320, "height": 2868 },
+  "font": { "family": "Plus Jakarta Sans", "css": "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=block" },
+  "theme": {
+    "bg": "#F3F4F7", "ink": "#101217", "muted": "#5B6070", "accent": "#F2542D", "eyebrowColor": "#B23A1B",
+    "surface": "#FFFFFF", "line": "rgba(16,18,23,.09)", "frame": "#101217",
+    "headlineWeight": 800, "headlineTracking": "-0.035em",
+    "darkBg": "#0E0F13", "darkInk": "#F2F3F5", "darkMuted": "#A0A5B2", "darkEyebrowColor": "#FF9475"
+  },
+  "shots": [
+    {
+      "out": "01-home.png", "image": "raw/01-home.png",
+      "pill": "Practice for all four AI certification exams",
+      "headline": "Know your score\nbefore exam day.",
+      "sub": "Every answer counts at the official domain weights, on the exam's 100 to 1000 scale.",
+      "deviceTop": 780
+    },
+    {
+      "out": "02-exams.png", "image": "raw/02-exams.png",
+      "eyebrow": "Four exams",
+      "headline": "Four certifications.\nOne study app.",
+      "deviceTop": 600
+    },
+    {
+      "out": "03-review.png", "image": "raw/03-study.png",
+      "eyebrow": "Missed questions",
+      "headline": "Every miss comes back\nuntil it sticks.",
+      "sub": "Misses return the next day, then space out to 3, 7 and 14 days.",
+      "deviceTop": 760
+    },
+    {
+      "out": "04-explanations.png", "image": "raw/04-review-correct.png",
+      "eyebrow": "Explanations",
+      "headline": "Every answer explained,\nright and wrong.",
+      "deviceTop": 600
+    },
+    {
+      "out": "05-formats.png", "image": "raw/05-multi-response.png",
+      "eyebrow": "Question formats",
+      "headline": "Both question formats.\nGraded like the real exam.",
+      "deviceTop": 600
+    },
+    {
+      "out": "06-practice-exams.png", "image": "raw/06-exam-result.png",
+      "eyebrow": "Practice exams",
+      "headline": "Full-length practice exams,\nscored 100 to 1000.",
+      "deviceTop": 600
+    }
+  ]
+}
