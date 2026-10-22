@@ -1,0 +1,46 @@
+<!doctype html>
+<!-- App Store product page header, 3840 x 1646. Safe area x 1098-2742, y 494-1154. -->
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@800&display=block">
+<style>
+  :root { --coral: #F2542D; --ink: #101217; }
+  html, body { margin: 0; }
+  .canvas {
+    position: relative; width: 3840px; height: 1646px; overflow: hidden;
+    background: radial-gradient(ellipse 70% 90% at 50% 0%, rgba(255,255,255,.16), rgba(255,255,255,0) 70%), var(--coral);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  .ghost { position: absolute; border-radius: 26%; background: rgba(255,255,255,.10); }
+  .row { position: absolute; left: 50%; top: 824px; display: flex; gap: 96px; align-items: center; transform: translate(-50%, -50%); }
+  .tile {
+    width: 300px; height: 300px; border-radius: 79px; display: grid; place-items: center;
+    background: rgba(255,255,255,.17); color: rgba(255,255,255,.78); font-weight: 800; font-size: 160px; line-height: 1;
+  }
+  .hero { width: 380px; height: 380px; display: block; margin: 0 -40px; }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <!-- Large faint tiles outside the safe area: background only, no small detail. -->
+  <div class="ghost" style="width:560px;height:560px;left:240px;top:-20px;transform:rotate(-14deg)"></div>
+  <div class="ghost" style="width:300px;height:300px;left:700px;top:1270px;transform:rotate(9deg);background:rgba(255,255,255,.14)"></div>
+  <div class="ghost" style="width:340px;height:340px;left:2860px;top:60px;transform:rotate(-10deg);background:rgba(255,255,255,.12)"></div>
+  <div class="ghost" style="width:620px;height:620px;left:3120px;top:1080px;transform:rotate(11deg)"></div>
+
+  <div class="row">
+    <div class="tile">A</div>
+    <div class="tile">B</div>
+    <!-- Same drawing as the app icon: tile, geometric C, badge with check. -->
+    <svg class="hero" viewBox="220 160 640 640" xmlns="http://www.w3.org/2000/svg">
+      <rect x="262" y="262" width="500" height="500" rx="132" transform="rotate(-6 512 512)" fill="#FFFFFF"/>
+      <path d="M586.93 400.91 A134 134 0 1 0 608.39 605.08 L556.60 555.07 A62 62 0 1 1 546.67 460.60 Z" fill="#101217"/>
+      <circle cx="728" cy="290" r="100" fill="#101217" stroke="#F2542D" stroke-width="30"/>
+      <path d="M667.98 304.02 L701.98 338.02 A17 17 0 0 0 726.02 313.98 L692.02 279.98 A17 17 0 0 0 667.98 304.02 Z M726.38 337.65 L790.38 269.65 A17 17 0 0 0 765.62 246.35 L701.62 314.35 A17 17 0 0 0 726.38 337.65 Z" fill="#FFFFFF"/>
+    </svg>
+    <div class="tile">D</div>
+  </div>
+</div>
+</body>
+</html>

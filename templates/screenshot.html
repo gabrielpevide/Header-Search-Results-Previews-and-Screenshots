@@ -1,0 +1,107 @@
+<!doctype html>
+<!--
+  One App Store screenshot: caption on top, the real app capture in an iPhone frame below.
+  Data-driven: render.mjs --data shots.json --index N fills window.SHOT_DATA / SHOT_INDEX.
+  Sizes are designed on a 1320-wide canvas and scale with canvas.width (renders 1284x2778 too).
+  Caption stack, top to bottom, each optional except the headline:
+    pill (rounded label with a dot) | eyebrow (small caps in the accent) | tick (accent bar, only when
+    there is neither pill nor eyebrow) | headline | sub | chips.
+  Typography comes from theme: headlineWeight, headlineTracking, eyebrowColor, surface, line.
+  Copy this file next to shots.json when an app needs a different layout; keep the data shape.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; }
+  .canvas {
+    --u: 1px; position: relative; overflow: hidden;
+    background: var(--bg); color: var(--ink); font-family: var(--font), system-ui, sans-serif;
+  }
+  .caption { position: absolute; left: 0; right: 0; top: calc(var(--u) * 150); text-align: center; padding: 0 calc(var(--u) * 90); }
+  .tick { width: calc(var(--u) * 6); height: calc(var(--u) * 44); margin: 0 auto calc(var(--u) * 56); background: var(--accent); border-radius: 99px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: calc(var(--u) * 16); margin-bottom: calc(var(--u) * 52);
+    padding: calc(var(--u) * 18) calc(var(--u) * 34); border-radius: 999px; background: var(--surface); border: calc(var(--u) * 2) solid var(--line);
+    font-weight: 600; font-size: calc(var(--u) * 32); color: var(--ink);
+  }
+  .pill::before { content: ''; width: calc(var(--u) * 16); height: calc(var(--u) * 16); border-radius: 50%; background: var(--accent); }
+  .eyebrow { margin-bottom: calc(var(--u) * 36); font-weight: 800; font-size: calc(var(--u) * 34); letter-spacing: 0.06em; text-transform: uppercase; color: var(--eyebrow); }
+  /* white-space: pre keeps the line breaks you wrote; fitText() shrinks the size until the longest line fits. */
+  h1 { margin: 0; font-weight: var(--h-weight); font-size: calc(var(--u) * 112); line-height: 1.04; letter-spacing: var(--h-tracking); white-space: pre; }
+  .sub { margin: calc(var(--u) * 40) auto 0; max-width: calc(var(--u) * 1040); color: var(--muted); font-weight: 500; font-size: calc(var(--u) * 46); line-height: 1.3; white-space: pre-line; text-wrap: balance; }
+  .chips { display: flex; justify-content: center; margin-top: calc(var(--u) * 56); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .chips span { flex: 1; padding: calc(var(--u) * 26) 0; font: 500 calc(var(--u) * 30) / 1 ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing: 0.08em; color: var(--muted); }
+  .chips span + span { border-left: 1px solid var(--line); }
+  .device {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    padding: calc(var(--u) * 22); border-radius: calc(var(--u) * 172); background: var(--frame);
+    box-shadow: 0 calc(var(--u) * 40) calc(var(--u) * 120) rgba(0,0,0,.18), inset 0 0 0 calc(var(--u) * 4) rgba(255,255,255,.08);
+  }
+  .screen { position: relative; overflow: hidden; border-radius: calc(var(--u) * 150); background: #000; }
+  .screen img { display: block; width: 100%; }
+  .island { position: absolute; left: 50%; transform: translateX(-50%); top: 2.4%; width: 31%; height: 3.4%; max-height: calc(var(--u) * 100); border-radius: 99px; background: #000; }
+</style>
+</head>
+<body>
+<div class="canvas" id="canvas">
+  <div class="caption">
+    <div class="pill" id="pill"></div>
+    <div class="eyebrow" id="eyebrow"></div>
+    <div class="tick" id="tick"></div>
+    <h1 id="headline"></h1>
+    <div class="sub" id="sub"></div>
+    <div class="chips" id="chips"></div>
+  </div>
+  <div class="device" id="device"><div class="screen"><img id="shot" alt=""><div class="island" id="island"></div></div></div>
+</div>
+<script>
+  const D = window.SHOT_DATA, S = D.shots[window.SHOT_INDEX || 0];
+  const W = D.canvas.width, H = D.canvas.height, t = D.theme, dark = !!S.dark;
+  const c = document.getElementById('canvas');
+  Object.assign(c.style, { width: W + 'px', height: H + 'px' });
+  const vars = {
+    '--u': (W / 1320) + 'px',
+    '--bg': S.background || (dark ? t.darkBg : t.bg),
+    '--ink': dark ? t.darkInk : t.ink,
+    '--muted': dark ? t.darkMuted : t.muted,
+    '--line': dark ? 'rgba(255,255,255,.12)' : (t.line || 'rgba(0,0,0,.10)'),
+    '--surface': dark ? 'rgba(255,255,255,.08)' : (t.surface || '#FFFFFF'),
+    '--eyebrow': dark ? (t.darkEyebrowColor || t.accent) : (t.eyebrowColor || t.accent),
+    '--h-weight': t.headlineWeight || 700,
+    '--h-tracking': t.headlineTracking || '-0.015em',
+    '--accent': t.accent, '--frame': t.frame || '#1D1D1F', '--font': `'${D.font.family}'`,
+  };
+  for (const [k, v] of Object.entries(vars)) c.style.setProperty(k, v);
+  if (D.font.css) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = D.font.css; document.head.appendChild(l); }
+
+  const setOrRemove = (id, text) => { const el = document.getElementById(id); if (text) el.textContent = text; else el.remove(); };
+  // Display fonts (Plus Jakarta Sans and others) leave a wide gap before . and , at headline sizes: pull them in.
+  const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]);
+  document.getElementById('headline').innerHTML =
+    esc(S.headline).replace(/([\p{L}\p{N}])([.,])/gu, `$1<span style="margin-left:${t.punctuationPull ?? -0.06}em">$2</span>`);
+  setOrRemove('sub', S.sub);
+  setOrRemove('pill', S.pill);
+  setOrRemove('eyebrow', S.eyebrow);
+  if (S.tick === false || S.pill || S.eyebrow || !t.accent) document.getElementById('tick').remove();
+  const chips = document.getElementById('chips');
+  if (S.chips?.length) S.chips.forEach(x => { const s = document.createElement('span'); s.textContent = x; chips.appendChild(s); });
+  else chips.remove();
+
+  const u = W / 1320, dev = document.getElementById('device');
+  dev.style.width = (S.deviceWidth || 1000) * u + 'px';
+  dev.style.top = (S.deviceTop || 700) * u + 'px';
+  document.getElementById('shot').src = new URL(S.image, D.__base).href;
+  if (S.island === false) document.getElementById('island').remove();
+
+  // Called by render.mjs once fonts have loaded, so the measurement uses the real font.
+  window.fitText = () => {
+    // Compare integer widths with each other: at scaled canvases a float max made 1 px of rounding look like overflow.
+    const h = document.getElementById('headline');
+    let size = (S.headlineSize || 112) * u;
+    h.style.fontSize = size + 'px';
+    while (h.scrollWidth > h.clientWidth && size > 60 * u) { size -= 2 * u; h.style.fontSize = size + 'px'; }
+  };
+</script>
+</body>
+</html>

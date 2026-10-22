@@ -1,0 +1,106 @@
+// Exemplo do seed temporário usado nos screenshots do Certly 1.3 (SwiftUI, estado em UserDefaults).
+// Num app novo: copie como Utilities/ScreenshotSeed.swift, troque as chaves e os dados pelos que os
+// services desse app leem no init, e apague o arquivo depois da captura. Tudo marcado TEMP-SCREENSHOT.
+//
+// Ligações temporárias que acompanharam este arquivo:
+//   App:            @State private var appState: AppState // TEMP-SCREENSHOT
+//                   init() { ScreenshotSeed.run(); _appState = State(wrappedValue: AppState()) } // TEMP-SCREENSHOT
+//   ContentView:    // .task { await appState.startAdsIfNeeded() } // TEMP-SCREENSHOT   (sem ATT nem banner)
+//   StudyViewModel: .sorted { ScreenshotSeed.order($0.id) < ScreenshotSeed.order($1.id) } // TEMP-SCREENSHOT   (no lugar de .shuffled())
+//   SimulationViewModel.startSimulation: pré-preenche selections (~73% certas) e recua startTime 48 min // TEMP-SCREENSHOT
+
+// TEMP-SCREENSHOT: whole file. Demo state for the App Store screenshots; delete before any commit.
+import Foundation
+
+enum ScreenshotSeed {
+    /// Shown first in the review queue: a single-response item, then a multiple-response one.
+    static let showcaseIds: [UUID] = ["ede47194-c18f-45a4-a7ca-81580cf14863", "609e86e1-2f91-5ef3-9182-1b90e5fc1d51"]
+        .compactMap(UUID.init(uuidString:))
+
+    static func order(_ id: UUID) -> Int { showcaseIds.firstIndex(of: id) ?? Int.max }
+
+    private struct Item: Decodable {
+        let id: UUID
+        let certification_id: UUID
+        let domain_id: UUID
+        let correct_option_index: Int
+        let correct_option_indices: [Int]?
+    }
+
+    static func run() {
+        let d = UserDefaults.standard
+        let cert = CertificationCatalog.architectFoundations
+        d.set(true, forKey: "hasCompletedOnboarding")
+        d.set(true, forKey: "hasSkippedAuth")
+        if CommandLine.arguments.contains("-screenshotFirstRun") {
+            d.removeObject(forKey: "activeCertificationId")
+        } else {
+            d.set(cert.uuidString, forKey: "activeCertificationId")
+        }
+        d.set("Alex", forKey: "user_display_name")
+        d.removeObject(forKey: "simulation_results")
+
+        guard let url = Bundle.main.url(forResource: "questions", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let all = try? JSONDecoder().decode([Item].self, from: data) else { return }
+
+        let cal = Calendar.current
+        let now = Date()
+        var entries: [UserProgress] = []
+        func add(_ q: Item, correct: Bool, daysAgo: Int, minutesAgo: Int, selection: [Int]? = nil) {
+            let at = now.addingTimeInterval(-Double(daysAgo * 86_400 + minutesAgo * 60))
+            let picked = selection ?? [correct ? q.correct_option_index : (q.correct_option_index + 1) % 4]
+            entries.append(UserProgress(
+                id: UUID(), userId: UUID(), questionId: q.id, isCorrect: correct,
+                selectedOptionIndex: picked.min() ?? 0,
+                selectedOptionIndices: picked.count > 1 ? picked : nil,
+                answeredAt: at,
+                reviewDueAt: correct ? nil : cal.date(byAdding: .day, value: 1, to: at),
+                reviewIntervalDays: correct ? nil : 1))
+        }
+
+        // Single-response items only, grouped by domain in catalog order.
+        let bank = all.filter { $0.certification_id == cert && ($0.correct_option_indices?.count ?? 1) <= 1 && !showcaseIds.contains($0.id) }
+        let byDomain = Dictionary(grouping: bank, by: \.domain_id)
+        let accuracy: [Double] = [0.80, 0.73, 0.67, 0.64, 0.78]   // gives a projected score around 734
+        var oldMisses = 0
+        var todayHits = 0
+        for (i, domainId) in byDomain.keys.sorted(by: { $0.uuidString < $1.uuidString }).enumerated() {
+            let items = (byDomain[domainId] ?? []).sorted { $0.id.uuidString < $1.id.uuidString }
+            let n = Int((Double(items.count) * 0.47).rounded())
+            let hits = Int((Double(n) * accuracy[min(i, accuracy.count - 1)]).rounded())
+            for (k, q) in items.prefix(n).enumerated() {
+                if k < hits {
+                    let today = todayHits < 7 && k % 6 == 0
+                    if today { todayHits += 1 }
+                    add(q, correct: true, daysAgo: today ? 0 : 1 + k % 11, minutesAgo: 20 + k * 3)
+                } else if oldMisses < 5 {
+                    oldMisses += 1   // missed a day or more ago: due for review now
+                    add(q, correct: false, daysAgo: 1 + oldMisses % 3, minutesAgo: 90)
+                } else {
+                    add(q, correct: false, daysAgo: 0, minutesAgo: 10 + k)
+                }
+            }
+        }
+        if let single = all.first(where: { $0.id == showcaseIds.first }) {
+            add(single, correct: true, daysAgo: 9, minutesAgo: 30)
+            add(single, correct: true, daysAgo: 5, minutesAgo: 30)
+            add(single, correct: false, daysAgo: 2, minutesAgo: 30)
+        }
+        if let multi = all.first(where: { $0.id == showcaseIds.last }) {
+            add(multi, correct: false, daysAgo: 1, minutesAgo: 200, selection: [1, 3])
+        }
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        if let encoded = try? encoder.encode(entries) { d.set(encoded, forKey: "progress_entries") }
+
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        let days = (0..<12).compactMap { cal.date(byAdding: .day, value: -$0, to: now) }.map(f.string(from:))
+        d.set(days, forKey: "streak_activeDays")
+        d.set(12, forKey: "streak_current")
+        d.set(12, forKey: "streak_longest")
+        d.set(now, forKey: "streak_lastActivity")
+    }
+}
