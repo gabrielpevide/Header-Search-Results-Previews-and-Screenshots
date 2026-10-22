@@ -5,7 +5,7 @@ description: Cria e sobe as imagens da página de qualquer app na App Store - sc
 
 # Imagens da App Store: screenshots, Header e Search Results
 
-Vale para todos os apps do usuário. Nada aqui é de um app só: cores, fontes, textos e telas vêm do projeto da vez.
+Vale para qualquer app iOS. Nada aqui é de um app só: cores, fontes, textos e telas vêm do projeto da vez. Precisa de macOS com Xcode e simulador, Node com Playwright (Chromium) e o `asc` (App Store Connect CLI) autenticado; AXe é opcional para navegar no simulador.
 
 Arquivos desta skill:
 - `reference/specs.md`: medidas, áreas seguras, tipos de tela, onde cada coisa sobe e as regras que reprovam. Leia antes de desenhar.
@@ -15,11 +15,11 @@ Arquivos desta skill:
 - `templates/header.html`, `templates/search-result.html`: esqueletos com as áreas seguras comentadas.
 - `examples/certly-1.3/`: um conjunto que foi para a loja: `shots.json`, `header.html`, `search-result.html` e `ScreenshotSeed.swift.txt` (o seed temporário de dados de demonstração e as ligações que ele precisou). Os caminhos de imagem do `shots.json` apontam para o projeto do Certly; é referência, não para rodar daqui.
 
-`SKILL=~/.claude/skills/app-store-visuals` nos comandos abaixo.
+Nos comandos abaixo, `SKILL` é a pasta desta skill: `~/.claude/skills/app-store-visuals` no Claude Code, `~/.agents/skills/app-store-visuals` no Codex.
 
 ## 0. Levantar o contexto
 
-1. **App e versão editável.** O app id está no `~/CLAUDE.md` (tabela de links) ou em `asc apps list`. A versão precisa estar em `PREPARE_FOR_SUBMISSION`:
+1. **App e versão editável.** O app id vem do `CLAUDE.md` ou `AGENTS.md` do projeto, quando ele anota, ou de `asc apps list`. A versão precisa estar em `PREPARE_FOR_SUBMISSION`:
    ```bash
    asc versions list --app APP_ID --output table
    asc localizations list --version VERSION_ID --output table   # id da localização en-US
@@ -38,14 +38,14 @@ Arquivos desta skill:
            urllib.request.urlretrieve(u,f'/tmp/current-shots/{t}-{i}.png'); print(t,i,x['attributes']['fileName'])
    EOF
    ```
-3. **Marca.** Cores e fontes do arquivo de tokens do app (a tabela do `~/CLAUDE.md` diz qual é), e o ícone atual. A arte usa só a paleta do app.
+3. **Marca.** Cores e fontes do arquivo de tokens do app (`DesignSystem.swift`, `Color+*.swift`, `Theme.swift` ou o CSS do site do app), e o ícone atual. A arte usa só a paleta do app.
 4. **O que a versão traz.** Leia o What's New e o diff. Feature nova que muda a decisão de instalar ganha uma tela.
 
 ## 1. Roteiro
 
 - 5 ou 6 telas. A 1ª responde "o que é e por que eu quero". As 3 primeiras aparecem sem rolar.
 - Uma ideia por tela, mostrada no app real. Legenda com no máximo umas 7 palavras; subtítulo opcional de uma linha.
-- Legenda é texto de loja: passe pela skill `no-ai-slop`, sem travessão, sem "best"/"#1", sem preço.
+- Legenda é texto de loja: direta e concreta, sem travessão, sem "best"/"#1", sem preço. Se houver uma skill de revisão de texto instalada (por exemplo `no-ai-slop`), passe as legendas por ela.
 - Reaproveite legendas antigas que continuam verdadeiras: o usuário já aprovou aquele tom.
 - Se o usuário só pediu "refaz" ou "atualiza", siga com o roteiro e mostre o resultado. Se é o primeiro conjunto do app, mostre telas e legendas numa mensagem antes de capturar.
 
@@ -77,7 +77,7 @@ xcrun simctl io $UDID screenshot raw/01-home.png
   - Desligue temporariamente o pedido de rastreamento (ATT) e o início do SDK de anúncios: alerta do sistema e banner não entram em screenshot.
 - Não use `simctl spawn defaults write` para forçar estado: o `cfprefsd` do simulador serve valor velho ao app.
 
-**Navegar.** `axe describe-ui --udid $UDID` lista botões com `AXLabel` e `frame` em pontos (o Pro Max tem 440×956 pt). Para tocar, o MCP do simulador (`tap` com x, y) foi confiável; `axe tap -x -y` às vezes não registra. Botão fora da tela: role com `swipe` e leia o `frame` de novo.
+**Navegar.** `axe describe-ui --udid $UDID` lista botões com `AXLabel` e `frame` em pontos (o Pro Max tem 440×956 pt). Para tocar, a ferramenta de simulador do seu agente (por exemplo o MCP de iOS Simulator com `tap` em x, y) foi a mais confiável; `axe tap -x -y` às vezes não registra. Botão fora da tela: role com `swipe` e leia o `frame` de novo.
 
 **Olhe cada captura** (Read no PNG) antes de compor:
 - Espere 1 a 2 s depois de navegar: animação de entrada pega no meio parece bug.
