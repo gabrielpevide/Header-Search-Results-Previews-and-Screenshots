@@ -1,30 +1,30 @@
 ---
 name: app-store-visuals
-description: Cria e sobe as imagens da página de qualquer app na App Store - screenshots de iPhone e iPad, Header (product page header) e Search Results - com as medidas certas, captura real no simulador, render em tamanho exato e upload pelo asc. Use quando o usuário pedir screenshots novos ou refeitos, "imagens da loja", header, search result, creative assets, arte da App Store, ou quando uma versão nova muda algo que aparece nas imagens atuais (número de itens, tela redesenhada, ícone novo).
+description: Makes and uploads the images on any app's App Store page - iPhone and iPad screenshots, the product page header and the search result image - at the right sizes, from real simulator captures, rendered at the exact size and uploaded with asc. Use when the user asks for new or redone screenshots, store images, a header, a search result, creative assets or App Store art, or when a new version changes something the current images show (an item count, a redesigned screen, a new icon).
 ---
 
-# Imagens da App Store: screenshots, Header e Search Results
+# App Store images: screenshots, header and search results
 
-Vale para qualquer app iOS. Nada aqui é de um app só: cores, fontes, textos e telas vêm do projeto da vez. Precisa de macOS com Xcode e simulador, Node com Playwright (Chromium) e o `asc` (App Store Connect CLI) autenticado; AXe é opcional para navegar no simulador.
+Works for any iOS app. Nothing here belongs to one app: colors, fonts, copy and screens come from the project at hand. It needs macOS with Xcode and a simulator, Node with Playwright (Chromium) and `asc` (the App Store Connect CLI) signed in. AXe is optional, for navigating the simulator.
 
-Arquivos desta skill:
-- `reference/specs.md`: medidas, áreas seguras, tipos de tela, onde cada coisa sobe e as regras que reprovam. Leia antes de desenhar.
-- `scripts/render.mjs`: HTML para PNG no tamanho exato, RGB sem alfa, com guias opcionais e checagem de fonte e imagem.
-- `scripts/check.sh`: confere tamanho, alfa e espaço de cor antes do upload.
-- `templates/screenshot.html`: legenda em cima, captura real numa moldura de iPhone embaixo, guiado por um `shots.json`.
-- `templates/header.html`, `templates/search-result.html`: esqueletos com as áreas seguras comentadas.
-- `examples/certly-1.3/`: um conjunto que foi para a loja: `shots.json`, `header.html`, `search-result.html` e `ScreenshotSeed.swift.txt` (o seed temporário de dados de demonstração e as ligações que ele precisou). Os caminhos de imagem do `shots.json` apontam para o projeto do Certly; é referência, não para rodar daqui.
+Files in this skill:
+- `reference/specs.md`: sizes, safe areas, display types, where each asset is uploaded and the rules that get images rejected. Read it before designing.
+- `scripts/render.mjs`: HTML to PNG at the exact size, RGB with no alpha, with optional guides and font and image checks.
+- `scripts/check.sh`: checks size, alpha and color space before upload.
+- `templates/screenshot.html`: caption on top, real capture in an iPhone frame below, driven by a `shots.json`.
+- `templates/header.html`, `templates/search-result.html`: starting points with the safe areas in comments.
+- `examples/certly-1.3/`: a set that shipped: `shots.json`, `header.html`, `search-result.html` and `ScreenshotSeed.swift.txt` (the temporary demo data seed and the hooks it needed). The image paths in `shots.json` point to the Certly project: it is a reference, not something to run from here.
 
-Nos comandos abaixo, `SKILL` é a pasta desta skill: `~/.claude/skills/app-store-visuals` no Claude Code, `~/.agents/skills/app-store-visuals` no Codex.
+In the commands below, `SKILL` is this skill's folder: `~/.claude/skills/app-store-visuals` in Claude Code, `~/.agents/skills/app-store-visuals` in Codex.
 
-## 0. Levantar o contexto
+## 0. Gather the context
 
-1. **App e versão editável.** O app id vem do `CLAUDE.md` ou `AGENTS.md` do projeto, quando ele anota, ou de `asc apps list`. A versão precisa estar em `PREPARE_FOR_SUBMISSION`:
+1. **App and editable version.** The app id comes from the project's `CLAUDE.md` or `AGENTS.md`, when it is written there, or from `asc apps list`. The version has to be in `PREPARE_FOR_SUBMISSION`:
    ```bash
    asc versions list --app APP_ID --output table
-   asc localizations list --version VERSION_ID --output table   # id da localização en-US
+   asc localizations list --version VERSION_ID --output table   # the en-US localization id
    ```
-2. **O que está no ar hoje.** Baixe as miniaturas e olhe cada uma (Read no PNG). Anote o que ficou falso nesta versão: números, rótulos, telas que mudaram, respostas que o conteúdo corrigiu.
+2. **What is live today.** Download the thumbnails and look at each one (Read the PNG). Write down what this version made false: numbers, labels, screens that changed, answers the content corrected.
    ```bash
    asc screenshots list --version-localization LOC_ID --output json > /tmp/shots.json
    python3 - /tmp/shots.json <<'EOF'
@@ -38,26 +38,26 @@ Nos comandos abaixo, `SKILL` é a pasta desta skill: `~/.claude/skills/app-store
            urllib.request.urlretrieve(u,f'/tmp/current-shots/{t}-{i}.png'); print(t,i,x['attributes']['fileName'])
    EOF
    ```
-3. **Marca.** Cores e fontes do arquivo de tokens do app (`DesignSystem.swift`, `Color+*.swift`, `Theme.swift` ou o CSS do site do app), e o ícone atual. A arte usa só a paleta do app.
-4. **O que a versão traz.** Leia o What's New e o diff. Feature nova que muda a decisão de instalar ganha uma tela.
+3. **Brand.** Colors and fonts from the app's token file (`DesignSystem.swift`, `Color+*.swift`, `Theme.swift` or the CSS of the app's site), and the current icon. The art uses only the app's palette.
+4. **What the version brings.** Read the What's New and the diff. A new feature that changes the decision to install gets a screen.
 
-## 1. Roteiro
+## 1. Shot list
 
-- 5 ou 6 telas. A 1ª responde "o que é e por que eu quero". As 3 primeiras aparecem sem rolar.
-- Uma ideia por tela, mostrada no app real. Legenda com no máximo umas 7 palavras; subtítulo opcional de uma linha.
-- Legenda é texto de loja: direta e concreta, sem travessão, sem "best"/"#1", sem preço. Se houver uma skill de revisão de texto instalada (por exemplo `no-ai-slop`), passe as legendas por ela.
-- Reaproveite legendas antigas que continuam verdadeiras: o usuário já aprovou aquele tom.
-- Se o usuário só pediu "refaz" ou "atualiza", siga com o roteiro e mostre o resultado. Se é o primeiro conjunto do app, mostre telas e legendas numa mensagem antes de capturar.
+- 5 or 6 screens. The first answers "what is it and why do I want it". The first 3 show without scrolling.
+- One idea per screen, shown in the real app. A caption of about 7 words at most, and an optional one-line subtitle.
+- A caption is store copy: direct and concrete, no em dash, no "best" or "#1", no price. If a copy-editing skill is installed (for example `no-ai-slop`), run the captions through it.
+- Reuse old captions that are still true: the user already approved that tone.
+- If the user only asked to redo or update, go ahead with the shot list and show the result. If it is the app's first set, show the screens and captions in a message before capturing.
 
-## 2. Captura no simulador
+## 2. Capture in the simulator
 
-Use um simulador cuja tela nativa já é 6.9" (Pro Max, 1320×2868): a captura entra na moldura sem perder nitidez.
+Use a simulator whose native screen is already 6.9" (Pro Max, 1320×2868): the capture goes into the frame without losing sharpness.
 
 ```bash
 UDID=$(xcrun simctl list devices available | grep -m1 "Pro Max" | grep -oE '[0-9A-F-]{36}')
 xcrun simctl boot $UDID 2>/dev/null; open -a Simulator
-xcrun simctl status_bar $UDID override --time 9:41 --batteryState discharging --batteryLevel 100 --cellularBars 4 --wifiBars 3 --dataNetwork wifi   # "charged" desenha um raio na bateria
-xcrun simctl ui $UDID appearance light        # ou dark, se a tela for mostrada no escuro
+xcrun simctl status_bar $UDID override --time 9:41 --batteryState discharging --batteryLevel 100 --cellularBars 4 --wifiBars 3 --dataNetwork wifi   # "charged" draws a bolt on the battery
+xcrun simctl ui $UDID appearance light        # or dark, if the screen is shown in dark mode
 xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
   -destination "platform=iOS Simulator,id=$UDID" -derivedDataPath /tmp/shots-dd build CODE_SIGNING_ALLOWED=NO
 xcrun simctl install $UDID /tmp/shots-dd/Build/Products/Debug-iphonesimulator/App.app
@@ -65,37 +65,37 @@ xcrun simctl launch $UDID BUNDLE_ID
 xcrun simctl io $UDID screenshot raw/01-home.png
 ```
 
-**Dados de demonstração.** Tela vazia vende mal; dado inventado que o app não mostraria é proibido. O dado é de demonstração, mas cada número na tela tem que sair da lógica real do app. Para chegar a um estado (histórico, nota, resultado de simulado):
-- Primeiro tente o caminho real: usar o app no simulador.
-- Quando o caminho real é longo demais, edite o código temporariamente: faça `cp` de cada arquivo antes, marque cada linha com `// TEMP-SCREENSHOT`, capture, restaure do `cp`, apague arquivos novos, e confirme que `grep -rn TEMP-SCREENSHOT` volta vazio e que `git status` só mostra o que já estava lá.
-- Padrão que funcionou (Certly 1.3):
-  - Um arquivo `ScreenshotSeed.swift` que grava no `UserDefaults` o que os services leem no `init` (progresso, sequência, exame escolhido, onboarding concluído).
-  - O seed roda antes do estado do app nascer: troque `@State private var appState = AppState()` por `@State private var appState: AppState` e um `init() { ScreenshotSeed.run(); _appState = State(wrappedValue: AppState()) }`. Valor padrão de propriedade é avaliado antes do corpo do `init`.
-  - Datas relativas a `Date()`, para "hoje" e "vencido" baterem com a hora da captura.
-  - Estado alternativo por argumento de lançamento (`xcrun simctl launch $UDID BUNDLE -screenshotFirstRun`, lido com `CommandLine.arguments`) em vez de outro build.
-  - Fila embaralhada: ordene os itens escolhidos primeiro. Fluxo longo (simulado de 60 questões): pré-preencha as respostas e deixe o app calcular a nota.
-  - Desligue temporariamente o pedido de rastreamento (ATT) e o início do SDK de anúncios: alerta do sistema e banner não entram em screenshot.
-- Não use `simctl spawn defaults write` para forçar estado: o `cfprefsd` do simulador serve valor velho ao app.
+**Demo data.** An empty screen sells badly, and made-up data the app would never show is not allowed. The data is for demonstration, but every number on screen has to come out of the app's real logic. To reach a state (history, a score, a mock exam result):
+- Try the real path first: use the app in the simulator.
+- When the real path is too long, edit the code temporarily: `cp` each file first, mark each line with `// TEMP-SCREENSHOT`, capture, restore from the `cp`, delete new files, and confirm that `grep -rn TEMP-SCREENSHOT` comes back empty and that `git status` shows only what was already there.
+- A pattern that worked (Certly 1.3):
+  - A `ScreenshotSeed.swift` file that writes to `UserDefaults` what the services read in `init` (progress, streak, chosen exam, onboarding done).
+  - The seed runs before the app's state is created: replace `@State private var appState = AppState()` with `@State private var appState: AppState` and an `init() { ScreenshotSeed.run(); _appState = State(wrappedValue: AppState()) }`. A property's default value is evaluated before the body of `init`.
+  - Dates relative to `Date()`, so "today" and "overdue" match the time of the capture.
+  - An alternative state through a launch argument (`xcrun simctl launch $UDID BUNDLE -screenshotFirstRun`, read with `CommandLine.arguments`) instead of another build.
+  - Shuffled queue: sort the chosen items first. Long flow (a 60-question mock exam): prefill the answers and let the app work out the score.
+  - Temporarily turn off the tracking prompt (ATT) and the start of the ads SDK: system alerts and banners stay out of screenshots.
+- Don't use `simctl spawn defaults write` to force a state: the simulator's `cfprefsd` serves the old value to the app.
 
-**Navegar.** `axe describe-ui --udid $UDID` lista botões com `AXLabel` e `frame` em pontos (o Pro Max tem 440×956 pt). Para tocar, a ferramenta de simulador do seu agente (por exemplo o MCP de iOS Simulator com `tap` em x, y) foi a mais confiável; `axe tap -x -y` às vezes não registra. Botão fora da tela: role com `swipe` e leia o `frame` de novo.
+**Navigate.** `axe describe-ui --udid $UDID` lists buttons with their `AXLabel` and `frame` in points (the Pro Max is 440×956 pt). To tap, your agent's simulator tool (for example the iOS Simulator MCP with `tap` at x, y) was the most reliable. `axe tap -x -y` sometimes doesn't register. Button off screen: scroll with `swipe` and read the `frame` again.
 
-**Olhe cada captura** (Read no PNG) antes de compor:
-- Espere 1 a 2 s depois de navegar: animação de entrada pega no meio parece bug.
-- Teclado aberto, alerta, spinner ou texto cortado: capture de novo.
-- Trate a captura como QA. Gráfico vazio com número cheio, contagem que não bate, texto que a versão corrigiu: é bug do app. Corrija no código (correção de verdade, sem marcação TEMP), recapture, e avise o usuário de que a build na loja precisa da correção.
-- `xcrun simctl io screenshot` não desenha a ilha dinâmica; o template desenha.
+**Look at each capture** (Read the PNG) before composing:
+- Wait 1 to 2 s after navigating: an entrance animation caught halfway looks like a bug.
+- Open keyboard, alert, spinner or cut-off text: capture again.
+- Treat the capture as QA. An empty chart with a full number, a count that doesn't match, text the version corrected: that is a bug in the app. Fix it in the code (a real fix, with no TEMP mark), capture again, and tell the user the build in the store needs the fix.
+- `xcrun simctl io screenshot` doesn't draw the Dynamic Island. The template does.
 
-## 3. Compor e renderizar os screenshots
+## 3. Compose and render the screenshots
 
-Guarde tudo no repositório do app, para a próxima versão só trocar captura e legenda:
+Keep everything in the app's repository, so the next version only swaps captures and captions:
 
 ```
-aso/screenshots/<versão>/shots.json
-aso/screenshots/<versão>/raw/*.png        capturas do simulador
-aso/screenshots/<versão>/1320x2868/*.png  saída que sobe
+aso/screenshots/<version>/shots.json
+aso/screenshots/<version>/raw/*.png        simulator captures
+aso/screenshots/<version>/1320x2868/*.png  output to upload
 ```
 
-`shots.json` (caminhos relativos a ele):
+`shots.json` (paths relative to it):
 
 ```json
 {
@@ -110,25 +110,25 @@ aso/screenshots/<versão>/1320x2868/*.png  saída que sobe
 }
 ```
 
-Campos de cada tela, de cima para baixo:
-- `pill`: rótulo arredondado com um ponto na cor de acento (bom para a 1ª tela).
-- `eyebrow`: chamada curta em caixa alta na cor `eyebrowColor` ("MISSED QUESTIONS").
-- `tick`: traço de acento, só aparece quando não há `pill` nem `eyebrow`; `tick: false` tira.
-- `headline`: use `\n` para quebrar; o tamanho diminui sozinho até a linha mais longa caber. `headlineSize` muda o ponto de partida (padrão 112).
-- `sub`: uma ou duas linhas, quebra balanceada.
-- `chips`: faixa de rótulos em mono.
-- `dark`, `background`, `deviceTop` e `deviceWidth` (px num canvas de 1320; padrão 700 e 1000), `island: false` se a captura já tiver a ilha.
+Fields of each screen, top to bottom:
+- `pill`: rounded label with a dot in the accent color (good for the first screen).
+- `eyebrow`: short all-caps line in `eyebrowColor` ("MISSED QUESTIONS").
+- `tick`: accent mark, only shown when there is no `pill` and no `eyebrow`. `tick: false` removes it.
+- `headline`: use `\n` to break lines. The size shrinks on its own until the longest line fits. `headlineSize` changes the starting point (default 112).
+- `sub`: one or two lines, balanced wrap.
+- `chips`: a row of labels in mono.
+- `dark`, `background`, `deviceTop` and `deviceWidth` (px on a 1320 canvas, default 700 and 1000), `island: false` if the capture already has the island.
 
-Campos do `theme`: `bg`, `ink`, `muted`, `accent`, `frame`, `eyebrowColor`, `surface` (fundo da pílula), `line`, `headlineWeight` (padrão 700), `headlineTracking` (padrão −0,015em), `punctuationPull` (padrão −0,06em: aproxima `.` e `,` da letra) e as versões `dark*`.
+Fields of `theme`: `bg`, `ink`, `muted`, `accent`, `frame`, `eyebrowColor`, `surface` (the pill's background), `line`, `headlineWeight` (default 700), `headlineTracking` (default −0.015em), `punctuationPull` (default −0.06em: pulls `.` and `,` closer to the letter) and the `dark*` versions.
 
-**Igualar ao site do app.** Quando o app tem site, copie dele: cor de fundo, cor do texto, acento, fonte, peso e espaçamento do título, e a cor das chamadas. Reaproveite o título principal do site na 1ª tela. Exemplo em `examples/certly-1.3/shots.json`, que segue o site do Certly: Plus Jakarta Sans 800, −0,035em, fundo `#F3F4F7`, chamadas `#B23A1B`.
+**Match the app's site.** When the app has a site, copy from it: background color, text color, accent, font, headline weight and tracking, and the eyebrow color. Reuse the site's main headline on the first screen. Example in `examples/certly-1.3/shots.json`, which follows Certly's site: Plus Jakarta Sans 800, −0.035em, background `#F3F4F7`, eyebrows `#B23A1B`.
 
-`deviceTop` que funcionou: 600 a 640 com chamada e título de 2 linhas, 760 a 800 com subtítulo, 900 com subtítulo e chips. A moldura passa da borda de baixo de propósito.
+`deviceTop` values that worked: 600 to 640 with an eyebrow and a 2-line headline, 760 to 800 with a subtitle, 900 with a subtitle and chips. The frame runs past the bottom edge on purpose.
 
-**Outros tamanhos.** O mesmo `shots.json` renderiza em 1284×2778 trocando só o `canvas`; o layout escala junto. Faça isso quando a versão tiver um conjunto 6.5" (ou um conjunto antigo de 1284 para trocar).
+**Other sizes.** The same `shots.json` renders at 1284×2778 by changing only the `canvas`, and the layout scales with it. Do this when the version has a 6.5" set (or an old 1284 set to replace).
 
 ```bash
-cd aso/screenshots/<versão>; mkdir -p 1320x2868
+cd aso/screenshots/<version>; mkdir -p 1320x2868
 n=$(python3 -c "import json;print(len(json.load(open('shots.json'))['shots']))")
 for i in $(seq 0 $((n-1))); do
   out=$(python3 -c "import json;print(json.load(open('shots.json'))['shots'][$i]['out'])")
@@ -137,23 +137,23 @@ done
 zsh $SKILL/scripts/check.sh 1320x2868 1320x2868/*.png
 ```
 
-Para revisar, reduza (`sips -Z 900 arquivo --out /tmp/x.png`) e olhe cada uma. Confira: legenda não encosta na moldura, nenhum número contradiz a descrição da versão, o dado de demonstração parece de uso real.
+To review, shrink (`sips -Z 900 file --out /tmp/x.png`) and look at each one. Check that the caption doesn't touch the frame, that no number contradicts the version's description, and that the demo data looks like real use.
 
-Se um app pede outro layout (paisagem, sem moldura, legenda embaixo), copie o template para a pasta da versão e edite a cópia. Mantenha o formato do `shots.json`.
+If an app needs another layout (landscape, no frame, caption below), copy the template to the version's folder and edit the copy. Keep the `shots.json` format.
 
-## 4. Header e Search Results
+## 4. Header and search results
 
-1. Copie `templates/header.html` e `templates/search-result.html` para `aso/creative/<versão>/`.
-2. Troque cores, fonte e a arte do `.focal` pelo motivo do app (o desenho do ícone funciona bem: liga a arte ao ícone que aparece logo abaixo). Use os SVGs do ícone quando existirem.
-3. Search result leva título de até 6 palavras, concreto (uma contagem, um formato). Header normalmente vai sem texto.
-4. Renderize com guias e olhe:
+1. Copy `templates/header.html` and `templates/search-result.html` to `aso/creative/<version>/`.
+2. Replace the colors, the font and the `.focal` art with the app's motif (the icon's drawing works well: it ties the art to the icon shown right below). Use the icon's SVGs when they exist.
+3. The search result takes a concrete headline of up to 6 words (a count, a format). The header usually has no text.
+4. Render with guides and look:
    ```bash
    node $SKILL/scripts/render.mjs header.html 3840 1646 /tmp/header-guides.png --guides header
    node $SKILL/scripts/render.mjs search-result.html 3840 2560 /tmp/search-guides.png --guides search
    sips -Z 1600 /tmp/header-guides.png --out /tmp/h.png; sips -Z 1600 /tmp/search-guides.png --out /tmp/s.png
    ```
-   Amarelo é a área segura (arte e texto dentro); verde, no header, é a faixa de cima que a barra de status cobre; ciano, o que o iPhone mostra.
-5. Renderize sem guias e confira:
+   Yellow is the safe area (art and text inside it). Green, on the header, is the top strip the status bar covers. Cyan is what the iPhone shows.
+5. Render without guides and check:
    ```bash
    node $SKILL/scripts/render.mjs header.html 3840 1646 header-3840x1646.png
    node $SKILL/scripts/render.mjs search-result.html 3840 2560 search-result-3840x2560.png
@@ -163,16 +163,16 @@ Se um app pede outro layout (paisagem, sem moldura, legenda embaixo), copie o te
 
 ## 5. Upload
 
-Só na versão em `PREPARE_FOR_SUBMISSION`. Nunca envie para revisão sem o ok explícito do usuário.
+Only on the version in `PREPARE_FOR_SUBMISSION`. Never submit for review without the user's explicit ok.
 
-**Screenshots.** Rode o dry-run, leia o que vai ser apagado, depois rode de verdade. A ordem na loja é a ordem dos nomes de arquivo. Use o `--device-type` do conjunto que já existe na versão (`asc screenshots list` mostra `APP_IPHONE_67` ou `APP_IPHONE_69`): o `--replace` só mexe nesse conjunto.
+**Screenshots.** Run the dry run, read what will be deleted, then run it for real. The order in the store is the order of the file names. Use the `--device-type` of the set the version already has (`asc screenshots list` shows `APP_IPHONE_67` or `APP_IPHONE_69`): `--replace` only touches that set.
 ```bash
 asc screenshots upload --version-localization LOC_ID --path 1320x2868 --device-type IPHONE_67 --replace --dry-run
 asc screenshots upload --version-localization LOC_ID --path 1320x2868 --device-type IPHONE_67 --replace --confirm --concurrency 1
 ```
-`--concurrency 1` sobe um arquivo por vez. Com o padrão (4 em paralelo) os uploads terminam fora de ordem.
+`--concurrency 1` uploads one file at a time. With the default (4 in parallel) the uploads finish out of order.
 
-**Confira o que a Apple serve**, não só o retorno do upload. Na ASC de hoje cada screenshot é também um placement da Asset Library; liste em ordem de exibição, baixe as miniaturas e olhe:
+**Check what Apple serves**, not only what the upload returned. In today's App Store Connect each screenshot is also an Asset Library placement. List them in display order, download the thumbnails and look:
 ```bash
 asc localizations placements list --localization-id LOC_ID --include image --placement-type APP_SCREENSHOT \
   --sort placementGroupPosition --output json > /tmp/placements.json
@@ -186,41 +186,41 @@ for n, p in enumerate(d['data']):
     urllib.request.urlretrieve(img['imageAsset']['templateUrl'].replace('{w}x{h}bb.{f}', '300x652bb.png'), f'/tmp/served-{n + 1}.png')
 EOF
 ```
-Sem `--sort placementGroupPosition` a lista vem fora da ordem de exibição; não conclua nada sobre ordem sem ele.
+Without `--sort placementGroupPosition` the list comes out of display order, so don't conclude anything about order without it.
 
-Se o usuário disser que "não mudou", confira primeiro qual versão ele está olhando. A versão à venda (`READY_FOR_SALE`) não aceita troca de imagem, e é ela que a loja mostra até a nova ser aprovada. A tela da versão nova na ASC às vezes só atualiza depois de recarregar a página.
+If the user says "it didn't change", check first which version they are looking at. The version on sale (`READY_FOR_SALE`) doesn't accept image changes, and it is the one the store shows until the new one is approved. The new version's screen in App Store Connect sometimes only updates after you reload the page.
 
-**Header e Search Results.** O id da Asset Library é o app id.
+**Header and search results.** The Asset Library id is the app id.
 ```bash
 asc asset-library images upload --library-id APP_ID --file header-3840x1646.png --category CREATIVE_ASSETS
 asc asset-library images upload --library-id APP_ID --file search-result-3840x2560.png --category CREATIVE_ASSETS
-asc localizations placements list --localization-id LOC_ID --output json   # já existe um? use swap
+asc localizations placements list --localization-id LOC_ID --output json   # one already there? use swap
 asc localizations placements create --localization-id LOC_ID --image-id IMG_ID --placement-type PRODUCT_PAGE_HEADER_ASSET --placement-group DEFAULT_PROFILE
 asc localizations placements create --localization-id LOC_ID --image-id IMG_ID --placement-type APP_STORE_SEARCH_RESULTS_ASSET --placement-group DEFAULT_PROFILE
 ```
-O placement volta com `"state":"ACTIVE"` quando deu certo.
+The placement comes back with `"state":"ACTIVE"` when it worked.
 
-## 6. Validar
+## 6. Validate
 
 ```bash
 asc validate --app APP_ID --version-id VERSION_ID --output table
 ```
 
-Meta: 0 bloqueios. O que já apareceu:
-- `age_rating.missing_field` `socialMedia` / `socialMediaAgeRestricted`: perguntas novas da Apple. App sem rede social: `asc age-rating edit --app-info-id APP_INFO_ID --social-media false --social-media-age-restricted false`. Aproveite e confira `advertising` contra o app (banner de AdMob conta).
-- `screenshots.required.ipad_unverified`: ignore se `TARGETED_DEVICE_FAMILY = 1`.
-- `privacy.publish_state.unverified`: a API não lê. Peça ao usuário para conferir o App Privacy no site, principalmente se a versão passou a coletar algo novo.
+Goal: 0 blockers. What has shown up before:
+- `age_rating.missing_field` `socialMedia` / `socialMediaAgeRestricted`: new questions from Apple. For an app with no social features: `asc age-rating edit --app-info-id APP_INFO_ID --social-media false --social-media-age-restricted false`. While there, check `advertising` against the app (an AdMob banner counts).
+- `screenshots.required.ipad_unverified`: ignore it if `TARGETED_DEVICE_FAMILY = 1`.
+- `privacy.publish_state.unverified`: the API can't read it. Ask the user to check App Privacy on the website, above all if the version started collecting something new.
 
-Termine dizendo ao usuário: o que subiu (com ids), o que não deu para verificar (como a arte fica na loja real só aparece depois da aprovação) e o que ficou para ele.
+Finish by telling the user what was uploaded (with ids), what could not be verified (how the art looks in the real store only shows after approval) and what is left for them.
 
-## Armadilhas já vistas
+## Pitfalls seen before
 
-- **Fonte:** o Google Fonts declara uma face por subconjunto Unicode e só carrega os usados; `render.mjs` só avisa quando nenhuma face da família carregou.
-- **Ponto final em título grande** fica solto da palavra em fontes de display como a Plus Jakarta Sans. O template de screenshot já puxa `.` e `,` para perto (`punctuationPull`). No search result, que não tem esse ajuste, tire os pontos.
-- **Espaçamento do título depende da fonte:** Inter Tight com −0,025em gruda as palavras curtas ("orjust"), use −0,015em; Plus Jakarta Sans 800 aguenta −0,035em.
-- **Ajuste automático do título:** compare largura inteira com largura inteira (`scrollWidth > clientWidth`). Com um limite em ponto flutuante, o arredondamento em 1284×2778 fazia o título encolher até o mínimo.
-- **Botão desabilitado no iOS 26** (`.disabled`) esmaece o rótulo, inclusive o da resposta certa depois de corrigir. É o app de verdade; não maquie, anote para o redesign.
-- **Alfa:** screenshot de página opaca no Chromium já sai RGB sem alfa. O `check.sh` confirma.
-- **Moldura:** `asc screenshots frame` exige Koubou 0.18.1 exato. O template desenha a moldura em CSS e a ilha dinâmica por cima (captura de simulador não tem ilha).
-- **Conjuntos `IMESSAGE_APP_*`** em app sem extensão de iMessage: não aparecem na loja; não confunda com o conjunto `APP_IPHONE_67`.
-- **Conteúdo corrigido:** se a versão corrigiu uma questão, resposta ou número, procure esse conteúdo nos screenshots antigos antes de reaproveitar uma captura.
+- **Font:** Google Fonts declares one face per Unicode subset and only loads the ones in use. `render.mjs` only warns when no face of the family loaded.
+- **A period in a large headline** drifts away from the word in display fonts such as Plus Jakarta Sans. The screenshot template already pulls `.` and `,` closer (`punctuationPull`). The search result doesn't have that adjustment, so drop the periods there.
+- **Headline tracking depends on the font:** Inter Tight at −0.025em glues short words together ("orjust"), so use −0.015em. Plus Jakarta Sans 800 can take −0.035em.
+- **Automatic headline fit:** compare whole width with whole width (`scrollWidth > clientWidth`). With a floating-point limit, rounding at 1284×2778 made the headline shrink to the minimum.
+- **A disabled button on iOS 26** (`.disabled`) fades its label, including the right answer's label after grading. That is the real app: don't touch it up, note it for the redesign.
+- **Alpha:** a screenshot of an opaque page in Chromium already comes out RGB with no alpha. `check.sh` confirms it.
+- **Frame:** `asc screenshots frame` requires exactly Koubou 0.18.1. The template draws the frame in CSS and the Dynamic Island on top (a simulator capture has no island).
+- **`IMESSAGE_APP_*` sets** in an app with no iMessage extension don't show in the store. Don't confuse them with the `APP_IPHONE_67` set.
+- **Corrected content:** if the version corrected a question, an answer or a number, look for that content in the old screenshots before reusing a capture.

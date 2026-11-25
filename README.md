@@ -8,7 +8,7 @@ A skill for **Claude Code** and **OpenAI Codex** that makes the images on an App
 
 The skill carries the sizes, the safe areas and the review rules that get these images rejected. It renders PNGs with no alpha channel, checks each file before upload, replaces the screenshot set with the `asc` CLI and assigns the header and search result to their slots. It does not submit anything for review.
 
-The instructions in `SKILL.md` are written in Portuguese. Claude and Codex follow them whatever language you write to them in.
+The instructions in `SKILL.md` are written in English. Claude and Codex follow them whatever language you write to them in.
 
 [Português abaixo](#português)
 

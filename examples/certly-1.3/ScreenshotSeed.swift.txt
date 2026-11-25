@@ -1,13 +1,13 @@
-// Exemplo do seed temporário usado nos screenshots do Certly 1.3 (SwiftUI, estado em UserDefaults).
-// Num app novo: copie como Utilities/ScreenshotSeed.swift, troque as chaves e os dados pelos que os
-// services desse app leem no init, e apague o arquivo depois da captura. Tudo marcado TEMP-SCREENSHOT.
+// Example of the temporary seed used for the Certly 1.3 screenshots (SwiftUI, state in UserDefaults).
+// In a new app: copy it as Utilities/ScreenshotSeed.swift, replace the keys and data with the ones that
+// app's services read in init, and delete the file after the capture. Everything is marked TEMP-SCREENSHOT.
 //
-// Ligações temporárias que acompanharam este arquivo:
+// Temporary hooks that went with this file:
 //   App:            @State private var appState: AppState // TEMP-SCREENSHOT
 //                   init() { ScreenshotSeed.run(); _appState = State(wrappedValue: AppState()) } // TEMP-SCREENSHOT
-//   ContentView:    // .task { await appState.startAdsIfNeeded() } // TEMP-SCREENSHOT   (sem ATT nem banner)
-//   StudyViewModel: .sorted { ScreenshotSeed.order($0.id) < ScreenshotSeed.order($1.id) } // TEMP-SCREENSHOT   (no lugar de .shuffled())
-//   SimulationViewModel.startSimulation: pré-preenche selections (~73% certas) e recua startTime 48 min // TEMP-SCREENSHOT
+//   ContentView:    // .task { await appState.startAdsIfNeeded() } // TEMP-SCREENSHOT   (no ATT and no banner)
+//   StudyViewModel: .sorted { ScreenshotSeed.order($0.id) < ScreenshotSeed.order($1.id) } // TEMP-SCREENSHOT   (instead of .shuffled())
+//   SimulationViewModel.startSimulation: prefills selections (~73% right) and moves startTime back 48 min // TEMP-SCREENSHOT
 
 // TEMP-SCREENSHOT: whole file. Demo state for the App Store screenshots; delete before any commit.
 import Foundation
